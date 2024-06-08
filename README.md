@@ -1,3 +1,1 @@
-# lemonade-backend
-
-# Development environment setup 
+# lemonade_backend
