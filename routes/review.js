@@ -79,19 +79,19 @@ router.get('/customer/:id', jwtMiddle.checkToken, function (req, res) {
     }
 });
 
-router.get('/:id', jwtMiddle.checkToken, function (req, res) {
+router.get('/detail/:id', jwtMiddle.checkToken, function (req, res) {
     try {
         var id = String(req.params.id);
-        Review.findById(id).sort({'createdAt': -1}).populate('user item createdBy').then((reviews) => {
-            if (!reviews) {
+        Review.findById(id).populate('user item createdBy').then((review) => {
+            if (!review) {
                 return res.json({
                     success: false,
-                    msg: 'Reviews does not Exist'
+                    msg: 'Review does not Exist'
                 });
             }
             return res.json({
                 success: true,
-                data: reviews
+                data: review
             });
         });
     } catch (ex) {

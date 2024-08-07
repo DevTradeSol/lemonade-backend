@@ -181,6 +181,7 @@ router.post('/', jwtMiddle.checkToken, function(req, res) {
             isRecurring: req.body.isRecurring,
             createdBy: req.body.createdBy,
             status: req.body.status,
+            childName: req.body.childName,
             tags: [],
             images: []
         });
@@ -220,6 +221,7 @@ router.put('/:id', jwtMiddle.checkToken, function(req, res) {
             item.isRecurring = req.body.isRecurring;
             item.markPaidCount = req.body.markPaidCount;
             item.assignedProviderId = req.body.assignedProviderId;
+            item.childName = req.body.childName,
             item.applicants = JSON.parse(req.body.applicants);
             item.recurringDays = JSON.parse(req.body.recurringDays);
             item.declinedApplicants = JSON.parse(req.body.declinedApplicants);

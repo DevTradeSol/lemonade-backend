@@ -69,6 +69,9 @@ var ItemSchema = new Schema({
     tags: [{
         type: String
     }],
+    childName: {
+        type: String
+    },
     completedAt: [{
         type: Date
     }],
