@@ -8,7 +8,7 @@ var mongoose = require('mongoose');
 
 router.get('/all', jwtMiddle.checkToken, function (req, res) {
     try{
-        Item.find().sort({'createdAt': -1}).populate('createdBy').then((items) => {
+        Item.find().sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,
@@ -30,7 +30,7 @@ router.get('/all', jwtMiddle.checkToken, function (req, res) {
 
 router.get('/', jwtMiddle.checkToken, function (req, res) {
     try{
-        Item.find({status: 'Offering', isDeleted: false}).sort({'createdAt': -1}).populate('createdBy').then((items) => {
+        Item.find({status: 'Offering', isDeleted: false}).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,
@@ -63,7 +63,7 @@ router.get('/my/:role', jwtMiddle.checkToken, function (req, res) {
         }
         query.isDeleted = false;
         console.log(query);
-        Item.find(query).sort({'createdAt': -1}).populate('createdBy').then((items) => {
+        Item.find(query).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,
@@ -92,7 +92,7 @@ router.get('/requests', jwtMiddle.checkToken, function (req, res) {
             isDeleted: false,
             'applicants.0': {$exists: true}
         };
-        Item.find(query).sort({'createdAt': -1}).populate('applicants').then((items) => {
+        Item.find(query).sort({'createdAt': -1}).populate('applicants').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,
@@ -124,7 +124,7 @@ router.get('/user/:id/:role', jwtMiddle.checkToken, function (req, res) {
             query.assignedProviderId = id;
         }
         query.isDeleted = false;
-        Item.find(query).sort({'createdAt': -1}).populate('createdBy').then((items) => {
+        Item.find(query).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,

@@ -296,7 +296,7 @@ router.put('/delete/:id/:role', jwtMiddle.checkToken, function(req, res) {
                         val.save();
                     });
                 }
-                deleteUser(res, userId);
+                return deleteUser(res, userId);
             });
         }
         else if(role == 'Customer'){
@@ -321,14 +321,50 @@ router.put('/delete/:id/:role', jwtMiddle.checkToken, function(req, res) {
                                 val.save();
                             });
                         }
-                        deleteUser(res, userId);
+                        return deleteUser(res, userId);
                     });
                 }
             });
         }
         else{
-            deleteUser(res, userId);
+            return deleteUser(res, userId);
         }
+    } catch (ex) {
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
+
+router.put('/restore/:id', jwtMiddle.checkToken, function(req, res) {
+
+    try {
+        var id = String(req.params.id);
+        User.findByIdAndUpdate(id, { isDeleted: false }).then((user) => {
+            if (!user) {
+                return res.json({
+                    success: false,
+                    msg: 'User does not Exist'
+                });
+            }
+            return res.json({
+                success: true,
+                data: user
+            });
+        });
+    } catch (ex) {
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
+
+router.get('/delete/:id', function (req, res) {
+    try{
+        var userId = String(req.params.id);
+        return deleteUser(res, userId);
     } catch (ex) {
         return res.json({
             success: false,
@@ -361,7 +397,7 @@ router.delete('/:id', jwtMiddle.checkToken, function (req, res) {
 });
 
 function deleteUser(res, userId){
-    User.findByIdAndUpdate(userId, { isDeleted: true }).then((user) => {
+    User.findOneAndDelete({_id: userId, isDeleted: false}, { isDeleted: true }).then((user) => {
         if (!user) {
             return res.json({
                 success: false,
@@ -370,7 +406,7 @@ function deleteUser(res, userId){
         }
         return res.json({
             success: true,
-            data: user
+            msg: 'Account deleted successfully'
         });
     });
 }

@@ -8,7 +8,7 @@ var mongoose = require('mongoose');
 router.get('/', jwtMiddle.checkToken, function (req, res) {
     try{
         var userId = crypto.decrypt(req.decoded.emp);
-        Favorite.find({user: userId}).sort({'createdAt': -1}).populate('item itemCreatedBy').then((favorites) => {
+        Favorite.find({user: userId}).sort({'createdAt': -1}).populate('item itemCreatedBy').lean().then((favorites) => {
             if (!favorites) {
                 return res.json({
                     success: false,

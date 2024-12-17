@@ -209,7 +209,7 @@ router.post('/forgotPassword', function (req, res) {
             user.otp = generateRandom(4);
             user.save();
 
-            sendEmail('forgot_password', req.body.email, 'Forgot Password', {name: user.name, otp: user.otp});
+            sendEmail('forgot_password', req.body.email, 'Forgot Password', {name: user.name, otp: user.otp, year: new Date().getFullYear()});
 
             return res.json({
                 success: true,
@@ -276,6 +276,46 @@ router.post('/verify', function (req, res) {
                         msg: 'OTP is invalid!'
                     }); 
                 }
+            }
+        });
+    }
+    catch(ex){
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }    
+});
+
+router.post('/delete', function (req, res) {
+
+    try{
+        console.log(req.body);
+        User.findOne({email: req.body.email}).then((user) => {
+            if (!user) {
+                return res.json({
+                    success: false,
+                    msg: 'User does not Exist'
+                });
+            }
+            if(user.isDeleted){
+                return res.json({
+                    success: false,
+                    msg: 'Your account has already deleted. Please contact Admin!'
+                });
+            }
+            else{
+
+                const url = `https://api.lemonadestandapp.com/api/users/delete/${user._id}`;
+
+                console.log(url);
+
+                sendEmail('delete_account', req.body.email, 'Request for account deletion', {name: user.name, url: url, year: new Date().getFullYear()});
+
+                return res.json({
+                    success: true,
+                    msg: 'Account deletion confirmation email has been sent to your email. Please verify'
+                });
             }
         });
     }
@@ -370,7 +410,7 @@ router.post('/sendEmail', function(req, res) {
 
         console.log(config.emailConfigs);
 
-        ejs.renderFile(path.join(__dirname, "../email_templates/register.ejs"), { name: req.body.name }, function (err, data) {
+        ejs.renderFile(path.join(__dirname, "../email_templates/register.ejs"), { name: req.body.name, year: new Date().getFullYear() }, function (err, data) {
             console.log('err');
             console.log(err);
             if (err) {

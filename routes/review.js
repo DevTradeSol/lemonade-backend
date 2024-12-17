@@ -15,7 +15,7 @@ router.get('/:role', jwtMiddle.checkToken, function (req, res) {
         else if(role == 'Customer'){
             query.user = userId;
         }
-        Review.find(query).sort({'createdAt': -1}).populate('item user createdBy').then((reviews) => {
+        Review.find(query).sort({'createdAt': -1}).populate('item user createdBy').lean().then((reviews) => {
             if (!reviews) {
                 return res.json({
                     success: false,
@@ -37,7 +37,7 @@ router.get('/:role', jwtMiddle.checkToken, function (req, res) {
 
 router.get('/item/:id', jwtMiddle.checkToken, function (req, res) {
     try {
-        Review.find({item: req.params.id}).sort({'createdAt': -1}).populate('user createdBy').then((reviews) => {
+        Review.find({item: req.params.id}).sort({'createdAt': -1}).populate('user createdBy').lean().then((reviews) => {
             if (!reviews) {
                 return res.json({
                     success: false,
@@ -59,7 +59,7 @@ router.get('/item/:id', jwtMiddle.checkToken, function (req, res) {
 
 router.get('/customer/:id', jwtMiddle.checkToken, function (req, res) {
     try {
-        Review.find({user: req.params.id}).sort({'createdAt': -1}).populate('user item createdBy').then((reviews) => {
+        Review.find({user: req.params.id}).sort({'createdAt': -1}).populate('user item createdBy').lean().then((reviews) => {
             if (!reviews) {
                 return res.json({
                     success: false,
@@ -82,7 +82,7 @@ router.get('/customer/:id', jwtMiddle.checkToken, function (req, res) {
 router.get('/detail/:id', jwtMiddle.checkToken, function (req, res) {
     try {
         var id = String(req.params.id);
-        Review.findById(id).populate('user item createdBy').then((review) => {
+        Review.findById(id).populate('user item createdBy').lean().then((review) => {
             if (!review) {
                 return res.json({
                     success: false,

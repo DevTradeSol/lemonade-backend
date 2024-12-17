@@ -7,7 +7,7 @@ var Notification = require("../models/notification");
 router.get('/', jwtMiddle.checkToken, function (req, res) {
     try{
         var userId = crypto.decrypt(req.decoded.emp);
-        Notification.find({userId: userId}).sort({'createdAt': -1}).populate('createdBy').then((notifications) => {
+        Notification.find({userId: userId}).sort({'createdAt': -1}).populate('createdBy').lean().then((notifications) => {
             if (!notifications) {
                 return res.json({
                     success: false,
