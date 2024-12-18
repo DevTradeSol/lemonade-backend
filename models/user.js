@@ -63,7 +63,19 @@ var UserSchema = new Schema({
     }],
     achievement: [{
         type: Object
-    }]
+    }],
+    blockedList : [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: 'user'
+        }
+    ],
+    reportedList : [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: 'user'
+        }
+    ]
 },
 {
     toJSON: {

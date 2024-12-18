@@ -25,7 +25,7 @@ router.get('/', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
 router.get('/role/:role', jwtMiddle.checkToken, function (req, res) {
@@ -48,11 +48,11 @@ router.get('/role/:role', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
-
+//change
 router.get('/:id', jwtMiddle.checkToken, function (req, res) {
-    
+
     try {
         var id = String(req.params.id);
         User.findById(id).then((user) => {
@@ -62,10 +62,24 @@ router.get('/:id', jwtMiddle.checkToken, function (req, res) {
                     msg: 'User does not Exist'
                 });
             }
-            return res.json({
-                success: true,
-                data: user
-            });
+            //check blockedList
+            console.log("🚀 ~ User.findById ~ req.decoded.c:", crypto.decrypt(req.decoded.c))
+            // if(crypto.decrypt(req.decoded.c) != "Admin" && user.blockedList.includes(req.decoded.sub)){
+            //     return res.json({
+            //         success: false,
+            //         msg: 'blocked by user'
+            //     });
+            // }
+            //get reports count if role admin
+            if(crypto.decrypt(req.decoded.c) != "Admin"){
+                User.countDocuments({reportedList : req.params.id}).then((items) => {
+                    console.log("🚀 ~ User.countDocuments ~ items:", items)
+                    return res.json({
+                        success: true,
+                        data: {...user.toObject(),reportsCount : items}
+                    });
+                })
+            }                   // user.reports = items.
         });
     } catch (ex) {
         return res.json({
@@ -137,7 +151,7 @@ router.put('/image/:id', jwtMiddle.checkToken, function(req, res) {
                     success: false,
                     msg: 'No Image Provided'
                 });
-            }            
+            }
         });
     } catch (ex) {
         console.log(ex);
@@ -264,7 +278,7 @@ router.put('/changePassword/:id', jwtMiddle.checkToken, function(req, res) {
                 return res.json({
                     success: false,
                     msg: 'Password does not match'
-                });    
+                });
             }
 
             user.password = crypto.encrypt(req.body.newPassword.trim());
@@ -310,7 +324,7 @@ router.put('/delete/:id/:role', jwtMiddle.checkToken, function(req, res) {
                     return res.json({
                         success: false,
                         msg: msg
-                    }); 
+                    });
                 }
                 else{
                     Item.find({'status': 'Offering', $or: [{'applicants': {$in: [userId]}}, {'assignedProviderId': userId}]}).select('applicants').then((offeredItems) => {
@@ -342,6 +356,54 @@ router.put('/restore/:id', jwtMiddle.checkToken, function(req, res) {
     try {
         var id = String(req.params.id);
         User.findByIdAndUpdate(id, { isDeleted: false }).then((user) => {
+            if (!user) {
+                return res.json({
+                    success: false,
+                    msg: 'User does not Exist'
+                });
+            }
+            return res.json({
+                success: true,
+                data: user
+            });
+        });
+    } catch (ex) {
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
+router.put('/block/:id', jwtMiddle.checkToken, function(req, res) {
+
+    try {
+        var id = String(req.params.id);
+        console.log("🚀 ~ User.findByIdAndUpdate ~ decoded:", req.decoded.sub)
+        User.findByIdAndUpdate(req.decoded.sub, { $addToSet:{blockedList: req.params.id} }, { new : true}).then((user) => {
+            if (!user) {
+                return res.json({
+                    success: false,
+                    msg: 'User does not Exist'
+                });
+            }
+            return res.json({
+                success: true,
+                data: user
+            });
+        });
+    } catch (ex) {
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
+router.put('/report/:id', jwtMiddle.checkToken, function(req, res) {
+
+    try {
+        var id = String(req.params.id);
+        console.log("🚀 ~ User.findByIdAndUpdate ~ decoded:", req.decoded.sub)
+        User.findByIdAndUpdate(req.decoded.sub, { $addToSet:{ reportedList: req.params.id} },{new : true }).then((user) => {
             if (!user) {
                 return res.json({
                     success: false,
