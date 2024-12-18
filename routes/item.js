@@ -1,7 +1,9 @@
 var express = require('express');
 var router = express.Router();
 var Item = require("../models/item");
+var User = require("../models/user");
 var crypto = require("../helper/crypto");
+var blockContent = require("../helper/blockContent");
 var jwtMiddle = require("../middleware/jwt");
 const uploadImage = require("../helper/functions").uploadFile;
 var mongoose = require('mongoose');
@@ -25,29 +27,48 @@ router.get('/all', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
-router.get('/', jwtMiddle.checkToken, function (req, res) {
+router.get('/', jwtMiddle.checkToken, async function (req, res) {
     try{
-        Item.find({status: 'Offering', isDeleted: false}).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
-            if (!items) {
-                return res.json({
-                    success: false,
-                    msg: 'Items does not Exist'
+        // Item.find({status: 'Offering', isDeleted: false}).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
+        //     if (!items) {
+        //         return res.json({
+        //             success: false,
+        //             msg: 'Items does not Exist'
+        //         });
+        //     }
+        //     return res.json({
+        //         success: true,
+        //         data: items
+        //     });
+        // }).catch(err=>{
+        //     console.log(err)
+        // })
+        // find users who i blocked and who blocked me
+        const blocked = await blockContent(req.decoded.sub)
+        // await User.find({$or:[{blockedUsers: req.decoded.sub}, {blockedUsers: {$in: [req.decoded.emp]}}]}).lean()
+        let resp = await Item.find({status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).lean()
+        .sort({'createdAt': -1})
+        const users = await User.find({_id:{$in: resp.map(item=>item.createdBy)}}).lean()
+        console.log("🚀 ~ users:", users)
+        items = resp.map(item=>{
+            const createdBy = users.find(user=>user._id.toString() == item.createdBy.toString())
+            return {...item, createdBy}
+        })
+        // console.log("🚀 ~ resp:", items)
+        return res.json({
+                    success: true,
+                    data: items
                 });
-            }
-            return res.json({
-                success: true,
-                data: items
-            });
-        });
     } catch (ex) {
+        console.log("🚀 ~ ex:", ex)
         return res.json({
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
 router.get('/my/:role', jwtMiddle.checkToken, function (req, res) {
@@ -80,7 +101,7 @@ router.get('/my/:role', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
 router.get('/requests', jwtMiddle.checkToken, function (req, res) {
@@ -109,7 +130,7 @@ router.get('/requests', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
 router.get('/user/:id/:role', jwtMiddle.checkToken, function (req, res) {
@@ -141,11 +162,11 @@ router.get('/user/:id/:role', jwtMiddle.checkToken, function (req, res) {
             success: false,
             msg: ex
         });
-    }   
+    }
 });
 
 router.get('/:id', jwtMiddle.checkToken, function (req, res) {
-    
+
     try {
         var id = String(req.params.id);
         Item.findById(id).then((item) => {
@@ -191,7 +212,7 @@ router.post('/', jwtMiddle.checkToken, function(req, res) {
             success: true,
             data: item
         });
-       
+
     } catch (ex) {
         return res.json({
             success: false,
@@ -272,7 +293,7 @@ router.put('/image/:id', jwtMiddle.checkToken, function(req, res) {
                     success: false,
                     msg: 'No Images Provided'
                 });
-            }            
+            }
         });
     } catch (ex) {
         console.log(ex);

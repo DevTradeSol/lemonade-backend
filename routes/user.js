@@ -64,12 +64,12 @@ router.get('/:id', jwtMiddle.checkToken, function (req, res) {
             }
             //check blockedList
             console.log("🚀 ~ User.findById ~ req.decoded.c:", crypto.decrypt(req.decoded.c))
-            // if(crypto.decrypt(req.decoded.c) != "Admin" && user.blockedList.includes(req.decoded.sub)){
-            //     return res.json({
-            //         success: false,
-            //         msg: 'blocked by user'
-            //     });
-            // }
+            if(crypto.decrypt(req.decoded.c) != "Admin" && user.blockedList.includes(req.decoded.sub)){
+                return res.json({
+                    success: false,
+                    msg: 'blocked by user'
+                });
+            }
             //get reports count if role admin
             if(crypto.decrypt(req.decoded.c) != "Admin"){
                 User.countDocuments({reportedList : req.params.id}).then((items) => {
@@ -379,19 +379,20 @@ router.put('/block/:id', jwtMiddle.checkToken, function(req, res) {
     try {
         var id = String(req.params.id);
         console.log("🚀 ~ User.findByIdAndUpdate ~ decoded:", req.decoded.sub)
-        User.findByIdAndUpdate(req.decoded.sub, { $addToSet:{blockedList: req.params.id} }, { new : true}).then((user) => {
+        User.findOneAndUpdate({_id:req.decoded.sub,blockedList:{$ne:req.params.id}}, { $addToSet:{blockedList: req.params.id} }, { new : true}).then((user) => {
             if (!user) {
                 return res.json({
                     success: false,
-                    msg: 'User does not Exist'
+                    msg: 'User already blocked'
                 });
             }
             return res.json({
                 success: true,
-                data: user
+                msg:"User blocked successfully"
             });
         });
     } catch (ex) {
+        console.log("🚀 ~ router.put ~ ex:", ex)
         return res.json({
             success: false,
             msg: ex
@@ -403,16 +404,16 @@ router.put('/report/:id', jwtMiddle.checkToken, function(req, res) {
     try {
         var id = String(req.params.id);
         console.log("🚀 ~ User.findByIdAndUpdate ~ decoded:", req.decoded.sub)
-        User.findByIdAndUpdate(req.decoded.sub, { $addToSet:{ reportedList: req.params.id} },{new : true }).then((user) => {
+        User.findOneAndUpdate({_id:req.decoded.sub,reportedList:{ $not : {$elemMatch:{_id:req.params.id}}}}, { $addToSet:{ reportedList: {_id : req.params.id, reason : req?.body?.reason || ""}} },{new : true }).then((user) => {
             if (!user) {
                 return res.json({
                     success: false,
-                    msg: 'User does not Exist'
+                    msg: 'User already reported'
                 });
             }
             return res.json({
                 success: true,
-                data: user
+                msg: 'User Reported'
             });
         });
     } catch (ex) {
@@ -423,6 +424,32 @@ router.put('/report/:id', jwtMiddle.checkToken, function(req, res) {
     }
 });
 
+router.get('/can-chat/:id',jwtMiddle.checkToken , function (req, res) {
+    try{
+        console.log("🚀 ~ [req.decoded.sub, req.params.id]:", [req.decoded.sub, req.params.id])
+        User.countDocuments({
+            _id: { $in: [req.decoded.sub, req.params.id] },
+            $or: [
+              { _id: req.decoded.sub, blockedList: req.params.id },
+              { _id: req.params.id, blockedList: req.decoded.sub }
+            ]
+          }).then((count) => {
+            console.log("🚀 ~ count:", count)
+            return res.json({
+                success: true,
+                data: {
+                    canChat: count == 0
+                }
+            });
+        });
+        // return deleteUser(res, userId);
+    } catch (ex) {
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
 router.get('/delete/:id', function (req, res) {
     try{
         var userId = String(req.params.id);

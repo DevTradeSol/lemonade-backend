@@ -72,8 +72,14 @@ var UserSchema = new Schema({
     ],
     reportedList : [
         {
-            type: mongoose.Types.ObjectId,
-            ref: 'user'
+            _id : {
+                type: mongoose.Types.ObjectId,
+                ref: 'user'
+            },
+            reason : {
+                type: String,
+                required: true
+            }
         }
     ]
 },
