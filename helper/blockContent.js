@@ -13,6 +13,6 @@ module.exports = async (userId) => {
 
   return [
     ...(usersYouBlocked?.blockedList || []),
-    usersWhoBlockedYou.map((user) => user._id) || [],
+    ...usersWhoBlockedYou.map((user) => user._id) || [],
   ];
 };
