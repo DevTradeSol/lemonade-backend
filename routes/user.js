@@ -64,14 +64,14 @@ router.get('/:id', jwtMiddle.checkToken, function (req, res) {
             }
             //check blockedList
             console.log("🚀 ~ User.findById ~ req.decoded.c:", crypto.decrypt(req.decoded.c))
-            if(crypto.decrypt(req.decoded.c) != "Admin" && user.blockedList.includes(req.decoded.sub)){
+            if(crypto.decrypt(req.decoded.c) != "Admin" && user.blockedList.map(b=>b.toString()).includes(req.decoded.sub)){
                 return res.json({
                     success: false,
                     msg: 'blocked by user'
                 });
             }
             //get reports count if role admin
-            if(crypto.decrypt(req.decoded.c) != "Admin"){
+            if(crypto.decrypt(req.decoded.c) == "Admin"){
                 User.countDocuments({reportedList : req.params.id}).then((items) => {
                     console.log("🚀 ~ User.countDocuments ~ items:", items)
                     return res.json({
@@ -80,8 +80,13 @@ router.get('/:id', jwtMiddle.checkToken, function (req, res) {
                     });
                 })
             }                   // user.reports = items.
+            return res.json({
+                success: true,
+                data: {...user.toObject()}
+            });
         });
     } catch (ex) {
+        console.log("🚀 ~ ex:", ex)
         return res.json({
             success: false,
             msg: ex
