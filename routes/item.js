@@ -53,7 +53,7 @@ router.get('/', jwtMiddle.checkToken, async function (req, res) {
         let resp = await Item.find({status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).lean()
         .sort({'createdAt': -1})
         const users = await User.find({_id:{$in: resp.map(item=>item.createdBy)}}).lean()
-        console.log("🚀 ~ users:", users)
+        // console.log("🚀 ~ users:", users)
         items = resp.map(item=>{
             const createdBy = users.find(user=>user._id.toString() == item.createdBy.toString())
             return {...item, createdBy}
@@ -72,29 +72,41 @@ router.get('/', jwtMiddle.checkToken, async function (req, res) {
     }
 });
 
-router.get('/my/:role', jwtMiddle.checkToken, function (req, res) {
+router.get('/my/:role', jwtMiddle.checkToken, async function (req, res) {
     try{
         var userId = crypto.decrypt(req.decoded.emp);
         var role = String(req.params.role);
         let query = {};
+        const blocked = await blockContent(req.decoded.sub)
         if(role == 'Provider'){
             query.createdBy = userId;
         }
         else if(role == 'Customer'){
             query.assignedProviderId = userId;
+            query.createdBy = {$nin:blocked};
         }
         query.isDeleted = false;
-        console.log(query);
-        Item.find(query).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
+        Item.find(query).sort({'createdAt': -1}).lean().then(async (items) => {
             if (!items) {
                 return res.json({
                     success: false,
                     msg: 'Items does not Exist'
                 });
             }
+            const users = await User.find({_id:{$in: items.map(item=>item.createdBy)}}).lean()
+            itemsNew = items.map(item=>{
+                const createdBy = users.find(user=>user._id.toString() == item.createdBy.toString())
+                if (blocked && blocked.length){
+                    item.applicants = item.applicants.filter(applicant=>
+                        !blocked.map(b=>b.toString()).includes(applicant)
+                    )
+                }
+                return {...item, createdBy}
+            })
+
             return res.json({
                 success: true,
-                data: items
+                data: itemsNew
             });
         });
     } catch (ex) {
