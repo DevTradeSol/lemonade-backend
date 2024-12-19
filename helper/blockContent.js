@@ -4,7 +4,6 @@ module.exports = async (userId) => {
   const usersYouBlocked = await User.findOne(
     { _id: userId }
   ).lean().select('blockedList');
-  console.log("🚀 ~ module.exports= ~ usersYouBlocked:", usersYouBlocked)
 
   // Users who have blocked you
   const usersWhoBlockedYou = await User.find(

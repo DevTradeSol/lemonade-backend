@@ -49,6 +49,7 @@ router.get('/', jwtMiddle.checkToken, async function (req, res) {
         // find users who i blocked and who blocked me
         const blocked = await blockContent(req.decoded.sub)
         // await User.find({$or:[{blockedUsers: req.decoded.sub}, {blockedUsers: {$in: [req.decoded.emp]}}]}).lean()
+        // let resp = await Item.find({createdBy : {$ne : req.decoded.sub},status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).lean()
         let resp = await Item.find({status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).lean()
         .sort({'createdAt': -1})
         const users = await User.find({_id:{$in: resp.map(item=>item.createdBy)}}).lean()
@@ -104,7 +105,7 @@ router.get('/my/:role', jwtMiddle.checkToken, function (req, res) {
     }
 });
 
-router.get('/requests', jwtMiddle.checkToken, function (req, res) {
+router.get('/requests', jwtMiddle.checkToken, async function (req, res) {
     try{
         var userId = crypto.decrypt(req.decoded.emp);
         let query = {
@@ -113,12 +114,22 @@ router.get('/requests', jwtMiddle.checkToken, function (req, res) {
             isDeleted: false,
             'applicants.0': {$exists: true}
         };
+        const blocked = await blockContent(userId)
+        console.log("🚀 ~ blocked:", blocked)
         Item.find(query).sort({'createdAt': -1}).populate('applicants').lean().then((items) => {
             if (!items) {
                 return res.json({
                     success: false,
                     msg: 'Items does not Exist'
                 });
+            }
+            if (blocked && blocked.length){
+                items = items.map((item)=>{
+                    let applicants = item.applicants.filter(applicant=>
+                        !blocked.map(b=>b.toString()).includes(applicant._id.toString())
+                    )
+                    return {...item, applicants}
+                })
             }
             return res.json({
                 success: true,
