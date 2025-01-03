@@ -29,7 +29,30 @@ router.get('/all', jwtMiddle.checkToken, function (req, res) {
         });
     }
 });
-
+//change
+router.get('/customer/applied', jwtMiddle.checkToken, async function (req, res) {
+    try{
+        // find users who i blocked and who blocked me
+        const blocked = await blockContent(req.decoded.sub)
+        let resp = await Item.find({applicants : req.decoded.sub, status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).sort({'createdAt': -1}).lean()
+        .sort({'createdAt': -1})
+        const users = await User.find({_id:{$in: resp.map(item=>item.createdBy)}}).select("-children").lean()
+        items = resp.map(item=>{
+            const createdBy = users.find(user=>user._id.toString() == item.createdBy.toString())
+            return {...item, createdBy}
+        })
+        return res.json({
+                    success: true,
+                    data: items
+                });
+    } catch (ex) {
+        console.log("🚀 ~ ex:", ex)
+        return res.json({
+            success: false,
+            msg: ex
+        });
+    }
+});
 router.get('/', jwtMiddle.checkToken, async function (req, res) {
     try{
         // Item.find({status: 'Offering', isDeleted: false}).sort({'createdAt': -1}).populate('createdBy').lean().then((items) => {
@@ -50,7 +73,7 @@ router.get('/', jwtMiddle.checkToken, async function (req, res) {
         const blocked = await blockContent(req.decoded.sub)
         // await User.find({$or:[{blockedUsers: req.decoded.sub}, {blockedUsers: {$in: [req.decoded.emp]}}]}).lean()
         // let resp = await Item.find({createdBy : {$ne : req.decoded.sub},status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).lean()
-        let resp = await Item.find({status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).sort({'createdAt': -1}).lean()
+        let resp = await Item.find({applicants : { $ne : req.decoded.sub },status: 'Offering', isDeleted: false,createdBy:{$nin : blocked}}).sort({'createdAt': -1}).lean()
         .sort({'createdAt': -1})
         const users = await User.find({_id:{$in: resp.map(item=>item.createdBy)}}).select("-children").lean()
         // console.log("🚀 ~ users:", users)
